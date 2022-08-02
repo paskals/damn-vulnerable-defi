@@ -46,10 +46,14 @@ describe("[Challenge] Selfie", function () {
       "SelfieExploit",
       attacker
     );
+
+
     let exploiter = await SelfieExploitFactory.deploy(
       this.pool.address,
       this.governance.address
     );
+
+    // Explanation in contract
     await exploiter.exploitProposal();
 
     // Advance time 2 days so that action can be executed

@@ -104,7 +104,8 @@ describe("[Challenge] The rewarder", function () {
       "RewardExploit",
       deployer
     );
-
+    
+    // Explanation in contract
     let exploiter = await ExploitFactory.deploy(
       this.flashLoanPool.address,
       this.rewarderPool.address,
