@@ -9,3 +9,4 @@ artifacts
 cache
 /soljson-*
 bin
+.DS_Store
